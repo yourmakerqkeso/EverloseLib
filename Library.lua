@@ -1175,6 +1175,10 @@ do
         end;
 
         function KeyPicker:GetState()
+            if InputService:GetFocusedTextBox() then
+                return false
+            end
+
             if KeyPicker.Mode == 'Always' then
                 return true;
             elseif KeyPicker.Mode == 'Hold' then
@@ -1193,7 +1197,7 @@ do
             else
                 return KeyPicker.Toggled;
             end;
-        end;
+        end
 
         function KeyPicker:SetValue(Data)
             local Key, Mode = Data[1], Data[2];
@@ -1282,6 +1286,8 @@ do
         end);
 
         Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
+            if InputService:GetFocusedTextBox() then return end
+
             if (not Picking) then
                 if KeyPicker.Mode == 'Toggle' then
                     local Key = KeyPicker.Value;
@@ -1315,6 +1321,8 @@ do
         end))
 
         Library:GiveSignal(InputService.InputEnded:Connect(function(Input)
+            if InputService:GetFocusedTextBox() then return end
+
             if (not Picking) then
                 KeyPicker:Update();
             end;
@@ -3631,161 +3639,6 @@ end;
 
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
-
--- Arraylist Implementation
-do
-    local Arraylist = {
-        Enabled = false,
-        Entries = {},
-        MaxEntries = 10,
-        Position = UDim2.new(1, -220, 0, 40),
-        Size = UDim2.new(0, 200, 0, 0),
-        Font = Enum.Font.Code,
-        TextSize = 14,
-        TextColor = Color3.new(1, 1, 1),
-        BackgroundColor = Color3.fromRGB(30, 30, 30),
-        OutlineColor = Color3.fromRGB(60, 60, 60),
-        AccentColor = Library.AccentColor,
-    }
-
-    -- Создаем UI элементы для Arraylist
-    local ArraylistOuter = Library:Create('Frame', {
-        BackgroundColor3 = Arraylist.BackgroundColor,
-        BorderColor3 = Arraylist.OutlineColor,
-        Position = Arraylist.Position,
-        Size = Arraylist.Size,
-        Visible = false,
-        ZIndex = 100,
-        Parent = ScreenGui,
-    })
-
-    local ArraylistInner = Library:Create('Frame', {
-        BackgroundColor3 = Arraylist.BackgroundColor,
-        BorderColor3 = Arraylist.OutlineColor,
-        BorderMode = Enum.BorderMode.Inset,
-        Size = UDim2.new(1, -2, 1, -2),
-        Position = UDim2.new(0, 1, 0, 1),
-        ZIndex = 101,
-        Parent = ArraylistOuter,
-    })
-
-    local ArraylistLayout = Library:Create('UIListLayout', {
-        Padding = UDim.new(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = ArraylistInner,
-    })
-
-    local ArraylistTitle = Library:Create('TextLabel', {
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 20),
-        Text = "ARRAYLIST",
-        TextColor3 = Arraylist.AccentColor,
-        TextSize = 14,
-        Font = Arraylist.Font,
-        TextStrokeTransparency = 0,
-        ZIndex = 102,
-        Parent = ArraylistInner,
-    })
-
-    Library:ApplyTextStroke(ArraylistTitle)
-
-    -- Делаем Arraylist перемещаемым
-    Library:MakeDraggable(ArraylistTitle, ArraylistOuter)
-
-    -- Функция для обновления позиции Arraylist
-    function Arraylist:SetPosition(newPosition)
-        ArraylistOuter.Position = newPosition
-        Arraylist.Position = newPosition
-    end
-
-    -- Функция для добавления записи в Arraylist
-    function Arraylist:AddEntry(text, color)
-        if not self.Enabled then return end
-        
-        -- Удаляем старые записи, если достигли максимума
-        while #self.Entries >= self.MaxEntries do
-            local oldest = table.remove(self.Entries, 1)
-            if oldest and oldest.Label then
-                oldest.Label:Destroy()
-            end
-        end
-        
-        local entryColor = color or self.TextColor
-        local entry = {
-            Text = text,
-            Color = entryColor,
-            Time = tick(),
-        }
-        
-        local entryLabel = Library:Create('TextLabel', {
-            BackgroundTransparency = 1,
-            Size = UDim2.new(1, -4, 0, 16),
-            Text = text,
-            TextColor3 = entryColor,
-            TextSize = self.TextSize,
-            Font = self.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextStrokeTransparency = 0,
-            ZIndex = 102,
-            Parent = ArraylistInner,
-        })
-        
-        Library:ApplyTextStroke(entryLabel)
-        
-        entry.Label = entryLabel
-        table.insert(self.Entries, entry)
-        
-        -- Автоматически обновляем размер Arraylist
-        self:UpdateSize()
-    end
-
-    -- Функция для обновления размера Arraylist
-    function Arraylist:UpdateSize()
-        local height = 20 + (#self.Entries * 18) + 2
-        ArraylistOuter.Size = UDim2.new(self.Size.X.Scale, self.Size.X.Offset, 0, height)
-        ArraylistInner.Size = UDim2.new(1, -2, 1, -2)
-    end
-
-    -- Функция для очистки Arraylist
-    function Arraylist:Clear()
-        for _, entry in ipairs(self.Entries) do
-            if entry.Label then
-                entry.Label:Destroy()
-            end
-        end
-        self.Entries = {}
-        self:UpdateSize()
-    end
-
-    -- Функция для включения/выключения Arraylist
-    function Arraylist:Toggle(state)
-        if state == nil then
-            state = not self.Enabled
-        end
-        
-        self.Enabled = state
-        ArraylistOuter.Visible = state
-        
-        if not state then
-            self:Clear()
-        end
-    end
-
-    -- Добавляем Arraylist в библиотеку
-    Library.Arraylist = Arraylist
-
-    -- Перехватываем изменения тогглов для автоматического добавления в Arraylist
-    local oldToggleSetValue = Toggles.__index.SetValue
-    Toggles.__index.SetValue = function(self, value)
-        oldToggleSetValue(self, value)
-        
-        if Library.Arraylist.Enabled then
-            local text = self.TextLabel.Text
-            local color = value and Library.AccentColor or Color3.fromRGB(200, 200, 200)
-            Library.Arraylist:AddEntry(text:gsub("^%s*(.-)%s*$", "%1"), color)
-        end
-    end
-end
 
 getgenv().Library = Library
 return Library
