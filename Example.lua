@@ -1,4 +1,4 @@
-local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+local repo = 'https://raw.githubusercontent.com/csuserbro/NeverloseLib/main/'
 
 local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
 local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
@@ -395,7 +395,7 @@ local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(
         FrameCounter = 0;
     end;
 
-    Library:SetWatermark(('LinoriaLib demo | %s fps | %s ms'):format(
+    Library:SetWatermark((' Watch demo | %s fps | %s ms'):format(
         math.floor(FPS),
         math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
     ));
